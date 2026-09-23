@@ -43,7 +43,7 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SpeedAlt'),
+        title: const Text('Hız Ölçer: Mesafe ve Rakım'),
         actions: [
           if (state.gpsStatus.hasIssues)
             IconButton(

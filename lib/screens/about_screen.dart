@@ -82,7 +82,7 @@ class AboutScreen extends StatelessWidget {
 
           const Center(
             child: Text(
-              'SpeedAlt',
+              'Hız Ölçer',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
@@ -95,7 +95,7 @@ class AboutScreen extends StatelessWidget {
 
           Center(
             child: Text(
-              'GPS Speedometer & Altimeter',
+              'Mesafe ve Rakım — GPS Hız ve İrtifa',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

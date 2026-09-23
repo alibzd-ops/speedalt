@@ -1,6 +1,6 @@
 workflows:
   android-release:
-    name: SpeedAlt Android Release Build
+    name: Hiz Olcer Android Release Build
     max_build_duration: 30
     instance_type: mac_mini_m2
     environment:
@@ -21,14 +21,22 @@ workflows:
       - build/**/outputs/apk/**/*.apk
 
   ios-release:
-    name: SpeedAlt iOS Release Build
+    name: Hiz Olcer iOS Release Build (TestFlight)
     max_build_duration: 30
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.bzdstudio.hizolcer
     scripts:
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -37,8 +45,11 @@ workflows:
           flutter test
       - name: Build iOS IPA
         script: |
-          # Builds unsigned archive suitable for Codemagic code signing or enterprise distribution
-          flutter build ipa --release --no-codesign
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/archive/*.xcarchive
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
