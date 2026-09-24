@@ -12,6 +12,10 @@
 	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Hız Ölçer, anlık hızınızı, irtifanızı ve katedilen mesafenizi hesaplamak için konum bilginizi kullanır.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Hız Ölçer, anlık hızınızı, irtifanızı ve katedilen mesafenizi hesaplamak için konum bilginizi kullanır.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Hız Ölçer, anlık hızınızı, irtifanızı ve katedilen mesafenizi hesaplamak için konum bilginizi kullanır.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
