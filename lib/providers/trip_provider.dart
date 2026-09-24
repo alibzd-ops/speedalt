@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/gps_status.dart';
 import '../models/trip_state.dart';
+import '../services/ad_service.dart';
 import '../services/altimeter_service.dart';
 import '../services/location_service.dart';
 import '../services/wakelock_service.dart';
@@ -24,6 +26,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
   double _maxSpeedMs = 0.0;
   int _tripSeconds = 0;
   int _movingSeconds = 0;
+  final List<LatLng> _routeCoordinates = [];
 
   TripProvider({
     required this.locationService,
@@ -92,11 +95,13 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
     final altReading = altimeterService.getReading(position);
     final altitudeM = altReading?.altitudeMeters ?? position.altitude;
     final altAccuracy = altReading?.accuracyMeters ?? position.altitudeAccuracy;
+    final heading = position.heading >= 0 ? position.heading : null;
 
     if (processed == null) {
       _state = _state.copyWith(
         gpsStatus: currentStatus,
         gpsAccuracyM: position.accuracy,
+        heading: heading,
       );
       notifyListeners();
       return;
@@ -108,6 +113,20 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
 
       if (processed.isValidForMaxSpeed && processed.currentSpeedMs > _maxSpeedMs) {
         _maxSpeedMs = processed.currentSpeedMs;
+      }
+
+      // Add to route coordinates breadcrumbs if moved enough
+      final currentLatLng = LatLng(processed.latitude, processed.longitude);
+      if (_routeCoordinates.isEmpty) {
+        _routeCoordinates.add(currentLatLng);
+      } else {
+        final lastPoint = _routeCoordinates.last;
+        final dLat = (currentLatLng.latitude - lastPoint.latitude).abs();
+        final dLng = (currentLatLng.longitude - lastPoint.longitude).abs();
+        // Record coordinate if moved at least ~3 meters
+        if (dLat > 0.00003 || dLng > 0.00003) {
+          _routeCoordinates.add(currentLatLng);
+        }
       }
 
       // Calculate average speed based on moving time, or total time if early in trip
@@ -129,6 +148,8 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
         latitude: processed.latitude,
         longitude: processed.longitude,
         gpsAccuracyM: processed.accuracyMeters,
+        heading: heading,
+        routeTrail: List.unmodifiable(_routeCoordinates),
       );
     } else if (_state.isStopped) {
       // While stopped, freeze trip stats (speed, max, avg, distance, duration)
@@ -140,6 +161,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
         latitude: processed.latitude,
         longitude: processed.longitude,
         gpsAccuracyM: processed.accuracyMeters,
+        heading: heading,
       );
     } else {
       // Idle or paused: update passive current speed, altitude and coordinates
@@ -151,6 +173,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
         latitude: processed.latitude,
         longitude: processed.longitude,
         gpsAccuracyM: processed.accuracyMeters,
+        heading: heading,
       );
     }
 
@@ -172,6 +195,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
     _maxSpeedMs = 0.0;
     _tripSeconds = 0;
     _movingSeconds = 0;
+    _routeCoordinates.clear();
 
     _state = _state.copyWith(
       tripStatus: TripStatus.running,
@@ -181,10 +205,14 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
       totalDistanceMeters: 0.0,
       tripDuration: Duration.zero,
       movingDuration: Duration.zero,
+      routeTrail: const [],
     );
     notifyListeners();
 
     _startTripTimer();
+
+    // Trigger AdMob interstitial ad & start 90s interval
+    AdService.instance.startTripAdSchedule();
 
     if (settingsProvider.keepScreenAwake) {
       await wakelockService.enable();
@@ -196,6 +224,8 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
     if (!_state.isTracking) return;
 
     _tripTimer?.cancel();
+    AdService.instance.stopTripAdSchedule();
+
     _state = _state.copyWith(
       tripStatus: TripStatus.paused,
       currentSpeedMs: 0.0,
@@ -213,6 +243,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
 
     _startTripTimer();
+    AdService.instance.startTripAdSchedule();
 
     if (settingsProvider.keepScreenAwake) {
       await wakelockService.enable();
@@ -222,6 +253,8 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
   /// Stops tracking and freezes final session statistics on screen.
   Future<void> stopTrip() async {
     _tripTimer?.cancel();
+    AdService.instance.stopTripAdSchedule();
+
     _state = _state.copyWith(
       tripStatus: TripStatus.stopped,
       currentSpeedMs: 0.0,
@@ -234,12 +267,14 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
   /// Clears current trip statistics after user confirmation.
   void resetTrip() {
     _tripTimer?.cancel();
+    AdService.instance.stopTripAdSchedule();
     locationService.resetFilter();
 
     _distanceAccumulatorMeters = 0.0;
     _maxSpeedMs = 0.0;
     _tripSeconds = 0;
     _movingSeconds = 0;
+    _routeCoordinates.clear();
 
     _state = _state.copyWith(
       tripStatus: TripStatus.idle,
@@ -249,6 +284,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
       totalDistanceMeters: 0.0,
       tripDuration: Duration.zero,
       movingDuration: Duration.zero,
+      routeTrail: const [],
     );
     notifyListeners();
   }
@@ -292,6 +328,7 @@ class TripProvider with ChangeNotifier, WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _tripTimer?.cancel();
     _positionSubscription?.cancel();
+    AdService.instance.stopTripAdSchedule();
     wakelockService.reset();
     super.dispose();
   }

@@ -30,6 +30,8 @@ workflows:
     integrations:
       app_store_connect: codemagic_app_store
     environment:
+      groups:
+        - admob
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -40,6 +42,12 @@ workflows:
       - name: Set up code signing settings on Xcode project
         script: |
           xcode-project use-profiles
+      - name: Configure AdMob app identifier if provided
+        script: |
+          if [ -n "$ADMOB_APP_ID" ]; then
+            echo "Setting custom ADMOB_APP_ID in Info.plist"
+            /usr/libexec/PlistBuddy -c "Set :GADApplicationIdentifier $ADMOB_APP_ID" ios/Runner/Info.plist 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :GADApplicationIdentifier string $ADMOB_APP_ID" ios/Runner/Info.plist
+          fi
       - name: Get Flutter packages
         script: |
           flutter packages pub get
@@ -50,9 +58,17 @@ workflows:
         script: |
           BUILD_NUM=$(($BUILD_NUMBER + 5))
           echo "Building iOS IPA with build number: $BUILD_NUM"
+          DART_DEFINES=""
+          if [ -n "$ADMOB_BANNER_ID" ]; then
+            DART_DEFINES="$DART_DEFINES --dart-define=ADMOB_IOS_BANNER_ID=$ADMOB_BANNER_ID"
+          fi
+          if [ -n "$ADMOB_INTERSTITIAL_ID" ]; then
+            DART_DEFINES="$DART_DEFINES --dart-define=ADMOB_IOS_INTERSTITIAL_ID=$ADMOB_INTERSTITIAL_ID"
+          fi
           flutter build ipa --release \
             --build-name=1.0.0 \
             --build-number=$BUILD_NUM \
+            $DART_DEFINES \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa

@@ -1,3 +1,4 @@
+import 'package:latlong2/latlong.dart';
 import 'gps_status.dart';
 
 enum TripStatus {
@@ -7,7 +8,7 @@ enum TripStatus {
   stopped,
 }
 
-/// Represents the active state of GPS speed, altitude, and trip metrics.
+/// Represents the active state of GPS speed, altitude, position, and trip metrics.
 class TripState {
   final TripStatus tripStatus;
   final GpsStatus gpsStatus;
@@ -22,6 +23,8 @@ class TripState {
   final double? latitude;
   final double? longitude;
   final double? gpsAccuracyM;
+  final double? heading;
+  final List<LatLng> routeTrail;
 
   const TripState({
     this.tripStatus = TripStatus.idle,
@@ -37,6 +40,8 @@ class TripState {
     this.latitude,
     this.longitude,
     this.gpsAccuracyM,
+    this.heading,
+    this.routeTrail = const [],
   });
 
   bool get isTracking => tripStatus == TripStatus.running;
@@ -61,6 +66,8 @@ class TripState {
     double? latitude,
     double? longitude,
     double? gpsAccuracyM,
+    double? heading,
+    List<LatLng>? routeTrail,
     bool clearCoordinates = false,
   }) {
     return TripState(
@@ -77,6 +84,8 @@ class TripState {
       latitude: clearCoordinates ? null : (latitude ?? this.latitude),
       longitude: clearCoordinates ? null : (longitude ?? this.longitude),
       gpsAccuracyM: clearCoordinates ? null : (gpsAccuracyM ?? this.gpsAccuracyM),
+      heading: heading ?? this.heading,
+      routeTrail: routeTrail ?? this.routeTrail,
     );
   }
 
