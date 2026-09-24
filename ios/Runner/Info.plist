@@ -7,9 +7,11 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>SpeedAlt</string>
+	<string>Hız Ölçer</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>SpeedAlt uses your location to calculate speed, altitude and travelled distance.</string>
+	<string>Hız Ölçer, anlık hızınızı, irtifanızı ve katedilen mesafenizi hesaplamak için konum bilginizi kullanır.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
