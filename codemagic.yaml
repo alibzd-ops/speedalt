@@ -15,7 +15,10 @@ workflows:
           flutter test
       - name: Build Android App Bundle (AAB)
         script: |
-          flutter build appbundle --release
+          BUILD_NUM=$(($BUILD_NUMBER + 5))
+          flutter build appbundle --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUM
     artifacts:
       - build/**/outputs/bundle/**/*.aab
       - build/**/outputs/apk/**/*.apk
@@ -45,7 +48,11 @@ workflows:
           flutter test
       - name: Build iOS IPA
         script: |
+          BUILD_NUM=$(($BUILD_NUMBER + 5))
+          echo "Building iOS IPA with build number: $BUILD_NUM"
           flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUM \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
